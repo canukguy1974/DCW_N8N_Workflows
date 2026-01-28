@@ -1,0 +1,221 @@
+{
+  "name": "Instagram Mentions to Notion",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "5861d8c3-94ec-45ed-a535-e7c1e54f18c3",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -224,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.instagram.com/me?fields=mentioned_media{media_url,timestamp,username}&access_token={{ $env.INSTAGRAM_ACCESS_TOKEN }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "c630238f-6487-453c-9bc6-a1c34a97daa3",
+      "name": "HTTP Request - Get Mentions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        16,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "mentioned_media.data",
+        "options": {}
+      },
+      "id": "46b200b9-1cba-4baf-b676-329ddc9cf104",
+      "name": "Split Out Mentions Array",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        256,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "516a769d-d6da-4e2f-a62c-e60a8d238576",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        496,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "username-field",
+              "name": "Username",
+              "value": "={{ $json.username }}",
+              "type": "string"
+            },
+            {
+              "id": "timestamp-field",
+              "name": "Timestamp",
+              "value": "={{ $json.timestamp }}",
+              "type": "string"
+            },
+            {
+              "id": "storyurl-field",
+              "name": "Story URL",
+              "value": "={{ $json.media_url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "830c291e-753b-46da-a0cb-d3a9104a866c",
+      "name": "Set - Extract Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        736,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "YOUR_NOTION_DATABASE_ID",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Username|title",
+              "title": "={{ $json.Username }}"
+            },
+            {
+              "key": "Timestamp|date",
+              "date": "={{ $json.Timestamp }}"
+            },
+            {
+              "key": "Story URL|url"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e0b85268-4c58-46f9-a005-316ac581821e",
+      "name": "Notion - Create Page",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        976,
+        80
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Get Mentions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Get Mentions": {
+      "main": [
+        [
+          {
+            "node": "Split Out Mentions Array",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Mentions Array": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Set - Extract Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Extract Fields": {
+      "main": [
+        [
+          {
+            "node": "Notion - Create Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion - Create Page": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "7830ef99-d96a-4faf-bc40-946837de0506",
+  "meta": {
+    "instanceId": "65e77c79ca174acc753f95cda0560d5437e3c60bafbd8109060ce7bf183d60d2"
+  },
+  "id": "7Mpsoc7yflyVkoqR8ysO8",
+  "tags": []
+}
